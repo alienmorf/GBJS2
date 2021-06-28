@@ -3,12 +3,16 @@ const API = 'https://raw.githubusercontent.com/GeekBrainsTutorial/online-store-a
 const app = new Vue({
     el: '#app',
     data: {
+        userSearch: '',
+        showCart: false,
         catalogUrl: '/catalogData.json',
+        cartUrl: '/getBasket.json',
+        addToBasket: '/addToBasket.json',
+        cartItems: [],
         products: [],
         filtered: [],
+        imgCart: 'https://via.placeholder.com/50x100',
         imgCatalog: 'https://via.placeholder.com/200x150',
-        userSearch: '',
-        show: false,
     },
     methods: {
         getJson(url) {
@@ -18,8 +22,31 @@ const app = new Vue({
                     console.log(error);
                 })
         },
-        addProduct(product) {
-            console.log(product.id_product);
+        addProduct(item) {
+            this.getJson(`${API + this.addToBasket}`)
+                .then(data => {
+                    if (data.result === 1) {
+                        let find = this.cartItems.find(el => el.id_product === item.id_product)
+                        if (find) {
+                            find.quantity++
+                        } else {
+                            const prod = Object.assign({ quantity: 1 }, item)
+                            this.cartItems.push(prod)
+                        }
+                    }
+                })
+        },
+        remove(item) {
+            this.getJson(`${API + this.addToBasket}`)
+                .then(data => {
+                    if (data.result === 1) {
+                        if (item.quantity > 1) {
+                            item.quantity--
+                        } else {
+                            this.cartItems.splice(this.cartItems.indexOf(item), 1)
+                        }
+                    }
+                })
         },
         filter() {
             const regexp = new RegExp(this.userSearch, 'i')
@@ -27,6 +54,13 @@ const app = new Vue({
         }
     },
     mounted() {
+        this.getJson(`${API + this.cartUrl}`)
+            .then(data => {
+                for (let item of data.contents) {
+                    this.cartItems.push(item)
+                }
+            })
+
         this.getJson(`${API + this.catalogUrl}`)
             .then(data => {
                 for (let item of data) {
